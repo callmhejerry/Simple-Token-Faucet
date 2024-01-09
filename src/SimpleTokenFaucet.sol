@@ -2,22 +2,30 @@
 
 pragma solidity ^0.8.18;
 
-error TokenExceeded(uint amount, address requester);
+import {IERC20} from "forge-std/interfaces/IERC20.sol";
+
+error TokenExceeded(uint256 amount, address requester);
 error FailedToSend();
 
 contract SimpleTokenFaucet {
-    IERC20 public token ;
-    constructor (address _tokenAddress){
+    IERC20 public token;
+
+    event SentToken(address indexed to);
+
+    constructor(address _tokenAddress) {
         token = IERC20(_tokenAddress);
     }
 
-    function requestToken(uint _amount)external{
-        if (_amount > 20){
+    function requestToken(uint256 _amount) external {
+        require(msg.sender != address(0));
+        if (_amount > 20) {
             revert TokenExceeded(_amount, msg.sender);
         }
-        (bool success,) =   msg.sender.call{"value": _amount}("");
-        if (!success){
+        bool success = token.transfer(msg.sender, _amount);
+        if (success){
+            emit SentToken(msg.sender);
+        }else {
             revert FailedToSend();
-            }
+        }
     }
 }
